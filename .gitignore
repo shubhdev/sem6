@@ -1,0 +1,5 @@
+*.pdf
+#c,c++
+*.out
+obj/
+Game\ Theory
