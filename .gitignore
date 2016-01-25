@@ -1,5 +1,11 @@
 *.pdf
 #c,c++
 *.out
+*.o
 obj/
 Game\ Theory
+
+#xv6 dir
+_*
+*.asm
+*.d
