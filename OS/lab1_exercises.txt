@@ -1,0 +1,15 @@
+exercise 2
+the first statement of the kernel : movw   $0x1234,0x472
+the first instruction of kernel is at :  0x10000c
+how does it know how many sectors?
+
+It first reads a page and stores it a 0x10000
+This page contains the ELF file header: https://en.wikipedia.org/wiki/Executable_and_Linkable_Format#File_header 
+as well as program headers.
+The num of program headers, is in the file header.
+We then iterate over the program headers, and each program header has a field memsz which tells the no of bytes of program to load in memory.(shouldnt we read p_filesz and allocate p_memsz??)
+
+Color coding :
+http://www.tuxradar.com/answers/482
+
+Each call to test_backtrace pushes 8 32-bit words. the stack pointer reduces by 0x20. which is 32 bytes. one word is 4 byte and hence 8 words per function call on stack
