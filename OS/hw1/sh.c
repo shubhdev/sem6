@@ -9,7 +9,8 @@
 #include <errno.h>
 
 // Simplifed xv6 shell.
-
+#define STDOUT 1
+#define STDIN 0
 #define MAXARGS 10
 
 // All commands have at least a type. Have looked at the type, the code
@@ -52,7 +53,7 @@ int get_argc(char** argv){
 void
 runcmd(struct cmd *cmd)
 {
-  int p[2], r, ret;
+  int p[2], ret;
   struct execcmd *ecmd;
   struct pipecmd *pcmd;
   struct redircmd *rcmd;
@@ -81,7 +82,7 @@ runcmd(struct cmd *cmd)
     
     //fprintf(stderr,"argc: %d cmd:%s\n",argc,argv[1]);
     ret = execv(argv[0],argv);
-    if(ret == -1){
+    if (ret == -1) {
       fprintf(stderr,"Unknown command: %s\n",ecmd->argv[0]);
       exit(1);
     }
@@ -92,39 +93,17 @@ runcmd(struct cmd *cmd)
     rcmd = (struct redircmd*)cmd;
     //fprintf(stderr, "redir not implemented\n");
     ret = close(rcmd->fd);
-    if( ret == -1){
+    if ( ret == -1) {
       const char* msg = (rcmd->fd==0)?"stdin":"stdout";
       fprintf(stderr,"Error redirecting %s\n",msg);
       exit(1);
     }
-    /*
-    S_IRUSR  00400 user has read permission
-
-    S_IWUSR  00200 user has write permission
-
-    S_IXUSR  00100 user has execute permission
-
-    S_IRWXG  00070 group has read, write, and execute permission
-
-    S_IRGRP  00040 group has read permission
-
-    S_IWGRP  00020 group has write permission
-
-    S_IXGRP  00010 group has execute permission
-
-    S_IRWXO  00007 others have read, write, and execute permission
-
-    S_IROTH  00004 others have read permission
-
-    S_IWOTH  00002 others have write permission
-
-    S_IXOTH  00001 others have execute permission
-    */
+    
     // in case a new file is created, need to set permissions. 
     // USER and GROUP have read write permissios, while others have read permissions
     int permissions = S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH;
     int fd = open(rcmd->file,rcmd->mode,permissions);
-    if( fd == -1 ){
+    if (fd == -1) {
       fprintf(stderr,"Error redirecting %s\n",rcmd->file);
       exit(1);
     } 
@@ -135,8 +114,50 @@ runcmd(struct cmd *cmd)
 
   case '|':
     pcmd = (struct pipecmd*)cmd;
-    fprintf(stderr, "pipe not implemented\n");
-    // Your code here ...
+    
+    ret = pipe(p);
+    if (ret == -1) {
+      perror("Error creating pipe");
+      exit(1);
+    }
+    int pid = fork();
+    if (pid == -1) {
+      perror("Fork error");
+      exit(1);
+    }
+    if (pid != 0) {   //parent, make stdin point to pipefd[0] then run right cmd
+      //printf("%d %d\n",p[0],p[1]);
+      ret = close(STDIN);
+      if (ret == -1) {
+        perror("Error closing stdin");
+        exit(1);
+      }
+      close(p[1]);
+      int fd = dup(p[0]);
+      if (fd == -1) {
+        perror("Error duplicating");
+        exit(1);
+      }
+      assert(fd == STDIN);
+      wait(NULL);
+      runcmd(pcmd->right);
+    }
+    else{
+      ret = close(STDOUT);
+      if (ret == -1) {
+        perror("Error closing stdout");
+        exit(1);
+      }
+      close(p[0]);
+      int fd = dup(p[1]);
+      if (fd == -1) {
+        perror("Error duplicating");
+        exit(1);
+      }
+      assert(fd == STDOUT);
+      runcmd(pcmd->left); 
+    }
+    
     break;
   }    
   exit(0);
