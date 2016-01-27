@@ -125,39 +125,49 @@ runcmd(struct cmd *cmd)
       perror("Fork error");
       exit(1);
     }
-    if (pid != 0) {   //parent, make stdin point to pipefd[0] then run right cmd
-      //printf("%d %d\n",p[0],p[1]);
+    if (pid == 0) {
+       
       ret = close(STDIN);
       if (ret == -1) {
         perror("Error closing stdin");
         exit(1);
       }
-      close(p[1]);
       int fd = dup(p[0]);
       if (fd == -1) {
         perror("Error duplicating");
         exit(1);
       }
       assert(fd == STDIN);
-      wait(NULL);
+      close(p[1]);
+      close(p[0]);
+      //wait(NULL);
       runcmd(pcmd->right);
     }
-    else{
+    pid = fork();
+    if (pid == -1) {
+      perror("Fork error");
+      exit(1);
+    }
+    if(pid == 0) {
       ret = close(STDOUT);
       if (ret == -1) {
         perror("Error closing stdout");
         exit(1);
       }
-      close(p[0]);
       int fd = dup(p[1]);
       if (fd == -1) {
         perror("Error duplicating");
         exit(1);
       }
       assert(fd == STDOUT);
+      close(p[0]);
+      close(p[1]);
       runcmd(pcmd->left); 
     }
-    
+    close(p[0]);
+    close(p[1]);
+    wait();
+    wait();
     break;
   }    
   exit(0);

@@ -48,7 +48,16 @@ fdalloc(struct file *f)
   }
   return -1;
 }
-
+//Allocates given fd for given file
+static int
+fdalloc2(int fd , struct file *f){
+  
+  if( fd < 0 || fd >= NOFILE || proc->ofile[fd] != 0){
+    return -1;
+  }
+  proc->ofile[fd] = f;
+  return fd;
+}
 int
 sys_dup(void)
 {
@@ -60,6 +69,36 @@ sys_dup(void)
   if((fd=fdalloc(f)) < 0)
     return -1;
   filedup(f);
+  return fd;
+}
+
+int
+sys_dup2(void){
+  //cprintf("Executing dup2!\n");
+  int oldfd , newfd;
+  struct file *file_oldfd , *file_newfd;
+  if(argfd(0,&oldfd,&file_oldfd) < 0) {
+    return -1;
+  }
+  if(argint(1,&newfd) < 0){
+    return -1;
+  }
+  // if both same, do nothing and return.
+  if(newfd == oldfd) 
+    return 0;
+  file_newfd = proc->ofile[newfd];
+  // close the new fd if already open
+  if(file_newfd != 0) {
+    //cprintf("Have to close the newfd!!\n");
+    proc->ofile[newfd] = 0;
+    fileclose(file_newfd);
+    //cprintf("newfd closed.\n");
+  }
+  int fd;
+  if((fd = fdalloc2(newfd,file_oldfd)) < 0)
+    return -1;
+ //cprintf("newfd allocated\n");
+  filedup(file_oldfd);
   return fd;
 }
 

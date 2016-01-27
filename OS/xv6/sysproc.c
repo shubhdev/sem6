@@ -83,9 +83,18 @@ int
 sys_uptime(void)
 {
   uint xticks;
-  
   acquire(&tickslock);
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+int sys_date(void){
+  //cprintf("Fecthing arg\n");
+  char *date_;
+  if(argstr(0,&date_) < 0) {
+    return -1;
+  }
+  //cprintf("Calling cmostime\n");
+  cmostime((struct rtcdate*)date_);
+  return 0;
 }

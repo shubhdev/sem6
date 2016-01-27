@@ -9,3 +9,17 @@ Game\ Theory
 _*
 *.asm
 *.d
+*~
+*.d
+*.asm
+*.sym
+*.img
+vectors.S
+bootblock
+entryother
+initcode
+initcode.out
+kernel
+kernelmemfs
+mkfs
+.gdbinit
