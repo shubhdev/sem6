@@ -146,7 +146,9 @@ _forktest: forktest.o $(ULIB)
 	# in order to be able to max out the proc table.
 	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o _forktest forktest.o ulib.o usys.o
 	$(OBJDUMP) -S _forktest > forktest.asm
-
+_uthread: uthread.o uthread_switch.o uthread_student.o
+	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o _uthread uthread.o uthread_switch.o uthread_student.o $(ULIB)
+	$(OBJDUMP) -S _uthread > uthread.asm
 mkfs: mkfs.c fs.h
 	gcc -Werror -Wall -o mkfs mkfs.c
 
@@ -173,7 +175,7 @@ UPROGS=\
 	_wc\
 	_zombie\
 	_date\
-
+	_uthread
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
 
