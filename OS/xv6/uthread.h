@@ -29,4 +29,4 @@ void thread_init(void);
 void thread_schedule(void);
 void thread_create(void (*func)(), int priority);
 void thread_yield(void);
-
+thread_p free_slot();

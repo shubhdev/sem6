@@ -33,7 +33,7 @@ thread_schedule(void)
   }
 
 
-  if (t >= all_thread + MAX_THREAD && current_thread->state == RUNNABLE) {
+  if (i >= MAX_THREAD && current_thread->state == RUNNABLE) {
     /* The current thread is the only runnable thread; run it. */
     next_thread = current_thread;
   }
@@ -52,11 +52,11 @@ thread_schedule(void)
 thread_p free_slot(){
     int i;
     for( i = 0; i < MAX_THREAD ; i++){
-        if(all_thread[i]->state == FREE){
-            return all_thread[i];
+        if(all_thread[i].state == FREE){
+            return (thread_p)&all_thread[i];
         }
     }
-    return NULL;
+    return 0;
 }
 void 
 thread_create(void (*func)(), int priority)
@@ -75,7 +75,11 @@ thread_create(void (*func)(), int priority)
   // leave space for return address
   // push return address on stack
   // leave space for registers that thread_switch will push
-  t->sp = 0;
+  int funcptr = (int)func;
+  int * stackptr = (int*)(t->stack + STACK_SIZE);
+  stackptr--;
+  *stackptr = func;
+  //t->sp = (int)stackptr;
   t->priority = priority;
   t->state = RUNNABLE;
 }
