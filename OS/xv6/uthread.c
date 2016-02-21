@@ -25,7 +25,7 @@ mythread(void)
   int i;
   printf(1, "my thread running\n");
   for (i = 0; i < 100; i++) {
-    printf(1, "my thread 0x%x\n", (int) current_thread);
+    printf(1, "my thread %d\n", current_thread-all_thread);
     thread_yield();
   }
   printf(1, "my thread: exit\n");
@@ -38,8 +38,10 @@ int
 main(int argc, char *argv[]) 
 {
   thread_init();
-  thread_create(mythread, 1);
-  thread_create(mythread, 2);
+  thread_create(mythread, 1); //thread-1
+  thread_create(mythread, 2);   //thread-2
+  thread_create(mythread, 1);   //thread-3
+  thread_create(mythread, 0);   //thread-4
   thread_schedule();
   return 0;
 }

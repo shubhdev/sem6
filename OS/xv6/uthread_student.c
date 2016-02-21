@@ -22,20 +22,17 @@ thread_schedule(void)
 
   /* Find another runnable thread. */
     t=current_thread+1;
+    int max_priority = -1;
   for (i=0;i<MAX_THREAD;i++) {
   	if (t >= all_thread+MAX_THREAD)
 		t = all_thread;
-    if (t->state == RUNNABLE && t != current_thread) {
-        next_thread = t;
-        break;
+    if (t->state == RUNNABLE) {
+        if(t->priority < max_priority || max_priority == -1){
+            next_thread = t;
+            max_priority = t->priority;
+        }
     }
 	t = (t+1);
-  }
-
-
-  if (i >= MAX_THREAD && current_thread->state == RUNNABLE) {
-    /* The current thread is the only runnable thread; run it. */
-    next_thread = current_thread;
   }
 
   if (next_thread == 0) {
@@ -44,6 +41,7 @@ thread_schedule(void)
   }
 
   if (current_thread != next_thread) {         /* switch threads?  */
+    printf(1,"Thread Switch %d -> %d\n",current_thread-all_thread,next_thread-all_thread);
     next_thread->state = RUNNING;
     thread_switch();
   } else
@@ -78,8 +76,17 @@ thread_create(void (*func)(), int priority)
   int funcptr = (int)func;
   int * stackptr = (int*)(t->stack + STACK_SIZE);
   stackptr--;
-  *stackptr = func;
-  //t->sp = (int)stackptr;
+  *stackptr = funcptr;
+  int *tmpstackptr = stackptr;
+  //push the general purpose registers, which are used by popal
+  //This instruction pushes all the general purpose registers onto the stack in the following order: 
+  //EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI
+  stackptr -= 5;
+  //set the saved esp, which should be the esp before the pusha instruction
+  *stackptr = (int)tmpstackptr;     // NOTE : apparently this doesn't make any difference, and the program still executes correctly
+  //http://www.fermimn.gov.it/linux/quarta/x86/popa.htm ESP value pop'ed is not used
+  stackptr -= 3;
+  t->sp = (int)stackptr;
   t->priority = priority;
   t->state = RUNNABLE;
 }
