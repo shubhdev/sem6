@@ -1,0 +1,371 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{enumitem}
+
+\title{COL 774 A1}
+\author{Name : Anupam Khandelwal\\
+        Entry No. : 2013CS10212}
+
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{centernot}
+
+\begin{document}
+
+\maketitle
+
+\section{Part 1.}
+\begin{enumerate}[label=(\alph*)]
+    \item Here , I have used gradient descent for obtaining minima of the $J(\theta)$ function . Let the no. of data points be m , then  the update formula is :\\
+        \begin{align*}
+        \theta _{t+1} = \theta _t - \frac{\eta}{m} \sum_{i=1}^{m} (y^{(i)} - \theta ^T_t x^{(i)})x^{(i)}
+        \end{align*}
+        The parameters for gradient descent are as follows : 
+        \begin{itemize}
+            \item Learning Rate($\eta$) : 0.5
+            \item Stopping or Convergence Condition : $|J(\theta _t)- J(\theta _{t+1})| \leq 10^{-9}$
+            \item Final parameters : $ \theta _0 = 5.8391 , \theta _1 = 4.6169 $
+        \end{itemize}
+    \item The plot obtained by performing linear regression is as follows :\\ 
+ 
+        \begin{figure}[H]
+            \centering
+            \includegraphics[scale = 0.4]{Linear_Reg_Line.jpg}
+            \caption{Linear Regression}
+            \label{Linear_Reg_Line}
+         \end{figure}
+
+        
+    \item The mesh plot is :
+        \begin{figure}[H]
+            \centering
+            \includegraphics[scale = 0.5]{Lin_Reg_Mesh_5.jpg}
+            \caption{Mesh Plot for $\eta = 0.5$}
+            \label{Linear_Reg_Line}
+         \end{figure}
+    
+    \item The contour plot is :
+         \begin{figure}[H]
+            \centering
+            \includegraphics[scale = 0.5]{Lin_Reg_5_cont.jpg}
+            \caption{Contour Plot for $\eta = 0.5$}
+            \label{Linear_Reg_Line}
+         \end{figure}
+    
+    \item Here are the contour plots for different values of $\eta$ : 
+         \begin{figure}[H]
+         \begin{minipage}{0.49 \textwidth}
+            \includegraphics[scale = 0.33]{Lin_Reg_1_cont.jpg}
+            \caption{Contour Plot for $\eta = 0.1$}
+            \label{Linear_Reg_Cont_5}
+         \end{minipage}
+         \begin{minipage}{0.49 \textwidth}
+            \includegraphics[scale = 0.33]{Lin_Reg_9_cont.jpg}
+            \caption{Contour Plot for $\eta = 0.9$}
+            \label{Linear_Reg_Cont_9}
+            \end{minipage}
+         \end{figure}
+         \begin{figure}[H]
+            \centering
+            \includegraphics[scale = 0.4]{Lin_Reg_13_cont.jpg}
+            \caption{Contour Plot for $\eta = 1.3$}
+            \label{Linear_Reg_Cont_13}
+         \end{figure}
+         
+         For $ \eta = 2.1 , 2.5$ , the gradient descent algorithm does not converge.
+         \\
+         
+         Here , we see that no. of iterations are as follows :
+         \begin{itemize}
+             \item $(\eta = 0.1) \implies 107$
+             \item $(\eta = 0.5) \implies 18$
+             \item $(\eta = 0.9) \implies 6$
+             \item $(\eta = 1.3) \implies 10$
+         \end{itemize}
+         All these converge to the same $\theta$ values.\\
+         We see from the contours , that in case when $\eta = 0.1 , 0.5$ and $0.9$ , then value of $\theta$ always converge towards minima. But in case of $\eta = 1.3$ , it overshoots the minima and then returns back to it.\\ 
+         
+         This is because in case when $\eta = 0.1 , 0.5$ and $0.9$ , then learning rate is not that high such that subtracting $\frac {\eta}{m} (y^{(i)} - \theta ^T_t x^{(i)})x^{(i)}$ to $\theta _t$ takes $\theta$ beyond the optimal value and then it has to come back from that.\\ 
+         
+         So, we see that till $\eta =0.9$ no. of iterations decrease as the steps towards convergence are larger. But when $\eta = 1.3$ , then the $\theta$ value first overshoots the minima and then comes back and forth until it converges, increasing no. of iterations from 6 in $\eta = 0.9$ to 10 in $\eta = 1.3$.\\
+         
+         When $\eta = 2.1$ or $2.5$ , then the value of eta is so large that every time , the value of $\theta$ overshoots the minima case in such a way that $\theta _{t+1}$ goes farther in distance from the minima than $\theta _t$ (This can also be seen if we display the values of $J(\theta)$ per iteration for these $\eta$ values ). As it goes farther from minima , and  as $J(\theta)$ is convex , so ,  value of $J(\theta)$  goes on increasing till infinity . So, divergence occurs in this case
+         
+\end{enumerate}
+    
+    
+    
+\section{Part 2.}
+\begin{enumerate}[label=(\alph*)]
+    \item The equation used for obtaining $\theta$ using Normal Optimization is : \\
+                    $\theta = (X^T * X)^{-1}*X^T * Y$ \\
+                    The plot obatined by it is as follows :
+        \begin{figure}[H]
+            \centering
+            \includegraphics[scale = 0.4]{Norm_Linear_Reg.jpg}
+            \caption{Line using above equation}
+            \label{Linear_Reg_Cont_13}
+         \end{figure}
+                    
+                    
+    \item Here , we will derive the equation by the following method :\\
+    \begin{align*} 
+           J(\theta) = \frac{1}{2} (X\theta - Y)^TW(X\theta - Y)
+    \end{align*}\\
+    So, for getting minima of $J(\theta)$ , 
+    
+    \begin{align*} 
+        \nabla_ \theta J = 0
+     \end{align*}
+    \begin{align*} 
+           \implies \nabla_ \theta   ((X\theta - Y)^TW(X\theta - Y)) =0
+    \end{align*}
+    
+    On removing the constant term , we get ,
+    \begin{align*} 
+           \implies \nabla_\theta (\theta ^T X^T W X \theta) = \nabla_\theta (Y^TWX\theta)  + \nabla_\theta (\theta ^T X^TWY) 
+    \end{align*}    
+    
+    \begin{align*} 
+           \implies X^TWX\theta + (\theta ^TX^TWX)^T = (Y^TWX)^T + X^TWY
+    \end{align*} 
+    \begin{align*}
+           \implies X^T(W + W^T)X\theta = X^T(W+W^T)Y
+    \end{align*}  
+    As W is a diagonal matrix , $W = W^T$ ,so, 
+    \begin{align*}
+           \implies X^TWX\theta = X^TWY
+    \end{align*}
+    \begin{align*}
+           \implies \theta = (X^TWX)^{-1}X^TWY
+    \end{align*}  
+    Here parameter $\tau = 0.8$ .
+    The plot obtained is as follows :\\
+    
+        \begin{figure}[H]
+            \centering
+            \includegraphics[scale = 0.5]{Weigh_Reg_tau_8.jpg}
+            \caption{Weighted Regression Curve for $\tau = 0.8$}
+            \label{Linear_Reg_Cont_13}
+         \end{figure}
+         
+         
+    \item The plots for different values of $\tau$ are :
+    
+    \begin{figure}[H]
+         \begin{minipage}{0.49 \textwidth}
+            \includegraphics[scale = 0.33]{Weigh_Reg_tau_1.jpg}
+            \caption{Plot for $\tau = 0.1$}
+            \label{Linear_Reg_Cont_5}
+         \end{minipage}
+         \begin{minipage}{0.49 \textwidth}
+            \includegraphics[scale = 0.33]{Weigh_Reg_tau_3.jpg}
+            \caption{Plot for $\tau = 0.3$}
+            \label{Linear_Reg_Cont_9}
+            \end{minipage}
+            
+         \end{figure}
+         
+    \begin{figure}[H]
+         \begin{minipage}{0.49 \textwidth}
+            \includegraphics[scale = 0.33]{Weigh_Reg_tau_20.jpg}
+            \caption{Plot for $\tau = 2$}
+            \label{Linear_Reg_Cont_5}
+         \end{minipage}
+         \begin{minipage}{0.49 \textwidth}
+            \includegraphics[scale = 0.33]{Weigh_Reg_tau_100.jpg}
+            \caption{Plot for $\tau = 10$}
+            \label{Linear_Reg_Cont_9}
+            \end{minipage}
+            
+         \end{figure}
+         
+         \begin{align*}
+           w^{(i)} = exp(-\frac{(x^{(i)}-x)^2}{2\tau^2})
+        \end{align*}  
+         
+         
+         Here we see that when $\tau = 0.1$ or $0.3$ , there are many different segments of the graph. This is because as $\tau$ is small, so, the weights near the point $x$ decrease at a very fast rate as the points $x^{(i)}$ goes away from $x$. So, the graph is very much influenced by its neighbourhood changing the graph sharply in small change of $x$ . So, we see the plot is rough and not smooth. Here we see if $\tau \to 0$ , every point is exactly predicted. This leads to overfitting. So, we see that if $\tau$ is small, then the function tends to overfit the data. \\
+         
+         As we increase the $\tau$ to 2 , we see that the graph becomes smoother and goes more towards linear regression as neighbourhood's importance decreases  . This is because $w^{(i)}$ does not decrease fast enough as we go far from $x$ .\\ 
+         
+         As we further increase the value of $\tau$ to 10, we see that the plot goes more towards linear regression as the significance of neighbourhood further decreases. Also if we increase $\tau \to \infty$, we see that $w^{(i)} \to 1$ making it equivalent to linear regression.\\
+         
+         On trying various values of $\tau$ , I found the $\tau =0.8$ fits the data quite well.
+         
+    
+    
+                    
+    
+\end{enumerate}
+
+\section{Part 3.}
+
+
+To obtain $i^{th},j^{th}$ entry of the Hessian Matrix (H) , we will have to do the following:
+
+
+        \begin{align*}
+           H(j,k) = \frac{\partial ^2 LL(\theta)}{\partial \theta _k \partial \theta_j}
+        \end{align*}  
+        Now,
+        \begin{align*}
+          LL(\theta) = \sum_{i=1}^{m} y^{(i)}\log h_\theta x^{(i)} + (1 - y^{(i)})\log (1 - h_\theta x^{(i)})
+        \end{align*}  
+        and 
+        \begin{align*}
+           h_\theta x^{(i)}  = \frac{1}{1+ e^{-\theta^T x^{(i)}}} \implies \frac{\partial h_\theta x^{(i)}}{\partial \theta _j} = (h_\theta x^{(i)}) (1 -  h_\theta x^{(i)}) x^{(i)} _j
+        \end{align*}  
+        
+        \begin{align*}
+           \implies \frac{\partial LL(\theta)}{\partial \theta_j} = \sum_{i=1}^{m} \frac{y^{(i)}}{h_\theta x^{(i)}} \frac{\partial h_\theta x^{(i)}}{\partial \theta _j}  - \frac{(1-y^{(i)})}{(1-h_\theta x^{(i)})}\frac{\partial h_\theta x^{(i)}}{\partial \theta _j}
+        \end{align*}  
+        
+        \begin{align}
+           \implies \frac{\partial LL(\theta)}{\partial \theta_j} = \sum_{i=1}^{m} (y^{(i)}(1-h_\theta x^{(i)}) - (1-y^{(i)})h_\theta x^{(i)})x^{(i)}_j = \sum_{i=1}^{m} (y^{(i)} - h_\theta x^{(i)})x^{(i)}_j 
+        \end{align}  
+            
+        \begin{align*}
+           \implies \frac{\partial ^2 LL(\theta)}{\partial \theta _k \partial \theta_j} = \sum_{i=1}^{m} -(h_\theta x^{(i)}(1 - h_\theta x^{(i)}) x^{(i)}_j)x^{(i)}_k
+        \end{align*}  
+        
+        \begin{align*}
+           \implies H(j,k) = \sum_{i=1}^{m} -x^{(i)}_j x^{(i)}_k h_\theta x^{(i)} (1 - h_\theta x^{(i)})
+        \end{align*}  
+        and
+        
+        \begin{align*}
+           (1) \implies \nabla_\theta LL(\theta)(j) =\sum_{i=1}^{m} (y^{(i)} - h_\theta x^{(i)})x^{(i)}_j 
+        \end{align*}  
+        
+        
+        
+        
+\begin{enumerate}[label=(\alph*)]
+    \item The question is done using Newton Optimisation . The update equation for $\theta$ for Newton Optimization is as follows :
+    \begin{align*}
+           \theta_{t+1} = \theta_t - (H)^{-1}\nabla_{\theta_t} LL(\theta_t)
+        \end{align*}
+    The value of $\theta$ obtained is as follows :
+    \begin{itemize}
+        \item $\theta _0 = -2.6205$
+        \item $\theta _1 = 0.7604$
+        \item $\theta _2 = 1.1719$
+    \end{itemize}
+    
+    Stopping Condition : $|LL(\theta_t) - LL(\theta_{t+1})| \leq 10^{-9}$
+    
+    \item The plot obtained from \\
+        $\frac{1}{1+ e^{-\theta ^TX}} = 0.5$ \\
+       or ,  $\theta ^TX =0$ is :
+        \begin{figure}[H]
+            \centering
+            \includegraphics[scale = 0.5]{Log_Reg.jpg}
+            \caption{Logistic Regression plot $\theta ^TX = 0$}
+            \label{Linear_Reg_Cont_13}
+         \end{figure}
+\end{enumerate}
+
+
+\section{Part 4.}
+\begin{enumerate}[label=(\alph*)]
+   \item The values of $\phi$ is 0.5 and  $\mu _0$ , $\mu _1$ and $\Sigma $ are :\\
+   
+             \hspace{4cm} \[
+            \mu _0 =
+              \begin{bmatrix}
+               98.38 & 429.66
+              \end{bmatrix}
+            \]
+            \\
+             \[
+            \mu _1 =
+              \begin{bmatrix}
+               137.46 & 366.62
+              \end{bmatrix}
+            \]
+            \\
+             \[
+           \Sigma =
+              \begin{bmatrix}
+               287.5 & -26.7 \\
+               -26.7 & 1123.3
+              \end{bmatrix}
+            \]
+    \item The plot for the given data is :
+        \begin{figure}[H]
+            \centering
+            \includegraphics[scale = 0.5]{GDA_pts.jpg}
+            \caption{Points of the data}
+            \label{Linear_Reg_Cont_13}
+         \end{figure}
+            
+    \item The plot for GDA when $\Sigma _0$ = $\Sigma _1$ = $\Sigma$ is linear as follows: 
+        \begin{align*}
+           \log(\frac{1-\phi}{\phi}) - \frac{1}{2}(X-\mu _0)^T\Sigma^{-1}(X-\mu _0) + \frac{1}{2}(X-\mu _1)^T\Sigma^{-1}(X-\mu _1) = 0
+        \end{align*}  
+    
+        \begin{figure}[H]
+            \centering
+            \includegraphics[scale = 0.45]{GDA_Linear.jpg}
+            \caption{GDA when $\Sigma _0$ = $\Sigma _1$ = $\Sigma$ }
+            \label{Linear_Reg_Cont_13}
+         \end{figure}
+         
+    \item The values of $\phi$ , $\mu _0$ and $\mu _1$ are same as above . The values of $\Sigma _0$ and $\Sigma _1$ are as follows :
+    
+                                \[
+                        \Sigma _0 =
+                          \begin{bmatrix}
+                           255.4 & -184.3 \\
+                            -184.3 & 1371.1
+                           
+                          \end{bmatrix}
+                        \]
+                        \\
+                        
+                         \[
+                        \Sigma _1 =
+                          \begin{bmatrix}
+                           319.57 & 130.83 \\
+                            130.83 & 875.4
+                           
+                          \end{bmatrix}
+                        \]
+                        \\
+                        
+                        
+    \item The plot for GDA when $\Sigma _0  \neq \Sigma _1$  is quadratic as follows :
+    
+          \begin{align*}
+           \log(\frac{1-\phi}{\phi}) - \frac{1}{2}\log( \frac{|\Sigma _0|}{|\Sigma _1|}) - \frac{1}{2}(X-\mu _0)^T\Sigma _0^{-1}(X-\mu _0) + \frac{1}{2}(X-\mu _1)^T\Sigma _1^{-1}(X-\mu _1) = 0
+        \end{align*}  
+        \begin{figure}[H]
+            \centering
+            \includegraphics[scale = 0.5]{GDA_new.jpg}
+            \caption{GDA when $\Sigma _0 \neq \Sigma _1$ with the previous plot  }
+            \label{Linear_Reg_Cont_13}
+         \end{figure}
+         
+         
+    \item The plot we get in case of the quadratic curve is a hyperbola . We can say that the quadratic case is better than linear case due to following points :
+    \begin{itemize}
+        \item No. of mismatches in linear case = 6 and in case of quadratic is = 5 . So, as no. of mismatches is lesser in quadratic case , so, it should be better.
+        \item We also see that in quadratic case , the mismatches become closer to the boundary as compared to linear case .Eg. blue 'x' on pt (120,380) approx becomes closer to boundary in quadratic case.
+        \item Also, we can say that quadratic curve bends in such a way so as to incorporate  the 'x' points closer to the boundary in their respective class. 
+    \end{itemize}
+    
+    
+    
+    
+\end{enumerate}
+
+
+
+
+
+
+
+\end{document}

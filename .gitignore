@@ -2,9 +2,14 @@
 #c,c++
 *.out
 *.o
+*.exe
 obj/
 Game\ Theory
-
+*.tmp
+*.docx
+#videos
+*.mkv
+*.mp4
 #xv6 dir
 _*
 *.asm
