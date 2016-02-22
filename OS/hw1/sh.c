@@ -144,7 +144,7 @@ runcmd(struct cmd *cmd)
       runcmd(pcmd->right);
     }
     pid = fork();
-    if (pid == -1) {
+    i (pid == -1) {
       perror("Fork error");
       exit(1);
     }
