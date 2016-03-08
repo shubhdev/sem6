@@ -19,8 +19,8 @@
 #include <string.h>
 #include <omp.h>
 #include <limits.h>
-
-
+#include <assert.h>
+#define max(a,b) ((a>b)?a:b);
 const int INFINITY = INT_MAX;
 const int NO_CITY = -1;
 const int FALSE = 0;
@@ -46,6 +46,7 @@ typedef struct {
    tour_t* list;
    int list_sz;
    int list_alloc;
+   int id;
 }  stack_struct;
 typedef stack_struct* my_stack_t;
 
@@ -63,7 +64,7 @@ void Read_digraph(FILE* digraph_file);
 void Print_digraph(void);
 
 void Par_tree_search(void); // TODO: Implement this function
-
+void Serial_tree_search(my_stack_t,tour_t);
 void Set_init_tours(int my_rank, int* my_first_tour_p,\
       int* my_last_tour_p);
 
@@ -78,7 +79,43 @@ int  Visited(tour_t tour, city_t city);
 void Init_tour(tour_t tour, cost_t cost);
 tour_t Alloc_tour(my_stack_t avail);
 void Free_tour(tour_t tour, my_stack_t avail);
-
+void Push(my_stack_t stack, tour_t tour){
+   if(stack->list_sz >= stack->list_alloc){
+      fprintf(stderr,"Stack overflow for stack %d\n",stack->id);
+      exit(1);
+   }
+   stack->list[stack->list_sz] = tour;
+   stack->list_sz++;
+}
+tour_t Pop(my_stack_t stack){
+   if(stack->list_sz == 0) {
+      printf("Pop from empty stack!\n");
+      exit(1);
+   }
+   stack->list_sz--;
+   return stack->list[stack->list_sz];
+}
+int Empty_stack(my_stack_t stack){
+   return stack->list_sz==0;
+}
+void Push_copy(my_stack_t stack, tour_t tour){
+   tour_t copy = Alloc_tour(NULL);
+   Copy_tour(tour,copy);
+   Push(stack,copy);
+}
+void Alloc_stack(my_stack_t stack,int id,int max_size){
+   assert(max_size > 0);
+   printf("%d\n",id);
+   fflush(stdout);
+   stack->list  = (tour_t*)malloc(max_size*sizeof(tour_struct));
+   if(!stack->list){
+      fprintf(stderr,"Out of memory!\n");
+      exit(1); 
+   }
+   stack->id = id;
+   stack->list_sz = 0;
+   stack->list_alloc = max_size;
+}
 /*------------------------------------------------------------------*/
 int main(int argc, char* argv[]) {
    FILE* digraph_file;
@@ -108,12 +145,11 @@ int main(int argc, char* argv[]) {
    printf("City count = %d\n",  City_count(best_tour));
    printf("Cost = %d\n\n", Tour_cost(best_tour));
 #  endif
-
+   // stack_struct global_stack;
+   // Alloc_stack(&global_stack,1,1000);
    start = omp_get_wtime();
-   /*
-    * TODO: Implement the parallel tsp 
-    * Par_tree_search(); 
-   */
+   //Serial_tree_search(&global_stack,init_tour);
+   Par_tree_search();
    finish = omp_get_wtime();
    
    Print_tour(-1, best_tour, "Best tour");
@@ -125,7 +161,90 @@ int main(int argc, char* argv[]) {
    free(digraph);
    return 0;
 }  /* main */
+#define STACK_SIZE 1000
+void Par_tree_search(){
+   //allocate stacks to each thread
+   printf("thread_count : %d\n",thread_count);
+   my_stack_t* thread_stacks = (my_stack_t*)malloc((thread_count+1)*sizeof(my_stack_t));
+   
+   int thread_id;
 
+   for(thread_id = 0; thread_id < thread_count; thread_id++){
+      thread_stacks[thread_id] = (my_stack_t)malloc(sizeof(stack_struct));
+      Alloc_stack(thread_stacks[thread_id],thread_id,1000);
+   }
+   
+   tour_t init_tour = Alloc_tour(NULL);
+   Init_tour(init_tour,0);
+    
+   //make an array of partial tours that will be solved by each threads.
+   // Anyone thread will fill the array while others will poll if they have something to do
+   // thread with id i, will check for partial tours at positions i+k*thread_count, for any k
+   int work_queue_len = max(n,2*thread_count);
+   printf("work_queue_len : %d\n",work_queue_len);
+
+   int work_queue_size = 0,start=0,end=0;  
+   tour_t* work_queue = (tour_t*)malloc(work_queue_len*sizeof(tour_t));
+   memset(work_queue,0,work_queue_len);
+   // int bfs_queue_len = 2*work_queue_len;
+   // int bfs_queue_size = 0;  
+   // tour_t* bfs_queue = (tour_t*)malloc(bfs_queue_len*sizeof(tour_t));
+   work_queue[0] = init_tour;
+   work_queue_size++;end++;
+   while(work_queue_size > 0 && work_queue_size < thread_count){
+      tour_t curr_tour = work_queue[start];
+      start = (start+1)%work_queue_len;
+      work_queue_size--;
+      int nbr;
+      for(nbr = n-1; nbr >=1 ; nbr--){
+         if(!Visited(curr_tour,nbr)){
+            printf("%d %d\n",work_queue_len,work_queue_size);
+            assert(work_queue_size <=work_queue_len);
+            tour_t copy = Alloc_tour(NULL);
+            Copy_tour(curr_tour,copy);
+            Add_city(copy,nbr);
+            work_queue[end] = copy;
+            end = (end+1)%work_queue_len;
+            work_queue_size++;
+         }
+      }
+      Free_tour(curr_tour,NULL);
+   }
+   printf("%d nodes in work queue\n",work_queue_size);
+   int i;
+   omp_set_num_threads(thread_count);
+   #pragma omp parallel for schedule(static) private(i)
+   
+      for(i = 0; i < work_queue_size; i++){
+         int idx = (start+i)%work_queue_len, tid = omp_get_thread_num();
+         Serial_tree_search(thread_stacks[tid],work_queue[idx]);
+      }
+   printf("Done!\n");
+   free(thread_stacks);
+   //Free_tour(init_tour,NULL);
+   free(work_queue);
+}
+void Serial_tree_search(my_stack_t stack,tour_t partial_tour){
+   assert(stack);
+   Push(stack,partial_tour);
+   while(!Empty_stack(stack)){
+      tour_t curr_tour = Pop(stack);
+      if(City_count(curr_tour) == n){
+         Update_best_tour(curr_tour);
+      }
+      else{
+         int nbr;
+         for(nbr = n-1; nbr >= 1; nbr--){
+            if(Feasible(curr_tour,nbr)){
+               Add_city(curr_tour,nbr);
+               Push_copy(stack,curr_tour);
+               Remove_last_city(curr_tour);
+            }
+         }
+      }
+      Free_tour(curr_tour,NULL);
+   }
+}
 /*------------------------------------------------------------------
  * Function:  Init_tour
  * Purpose:   Initialize the data members of allocated tour
@@ -244,7 +363,9 @@ int Best_tour(tour_t tour) {
 void Update_best_tour(tour_t tour) {
 
    if (Best_tour(tour)) {
+      #pragma omp critical
       Copy_tour(tour, best_tour);
+      #pragma omp critical
       Add_city(best_tour, home_town);
    }
 }  /* Update_best_tour */
