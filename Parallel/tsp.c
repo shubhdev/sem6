@@ -58,7 +58,7 @@ cost_t* digraph;
 city_t home_town = 0;
 tour_t best_tour;
 int init_tour_count;
-my_stack_t obj_pool;
+my_stack_t obj_pool = 0;
 void Usage(char* prog_name);
 void Read_digraph(FILE* digraph_file);
 void Print_digraph(void);
@@ -103,7 +103,7 @@ void Push_copy(my_stack_t stack, tour_t tour){
 }
 void Alloc_stack(my_stack_t stack,int id,int max_size){
    assert(max_size > 0);
-   printf("%d\n",id);
+   // printf("%d\n",id);
    fflush(stdout);
    stack->list  = (tour_t*)malloc(max_size*sizeof(tour_struct));
    if(!stack->list){
@@ -161,7 +161,7 @@ int main(int argc, char* argv[]) {
 #define STACK_SIZE 1000
 void Par_tree_search(){
    //allocate stacks to each thread
-   printf("thread_count : %d\n",thread_count);
+   //printf("thread_count : %d\n",thread_count);
    my_stack_t* thread_stacks = (my_stack_t*)malloc((thread_count+1)*sizeof(my_stack_t));
    
    int thread_id;
@@ -176,7 +176,7 @@ void Par_tree_search(){
     
    
    int work_queue_len = max(n,2*thread_count);
-   printf("work_queue_len : %d\n",work_queue_len);
+   //printf("work_queue_len : %d\n",work_queue_len);
 
    int work_queue_size = 0,start=0,end=0;  
    tour_t* work_queue = (tour_t*)malloc(work_queue_len*sizeof(tour_t));
@@ -189,21 +189,26 @@ void Par_tree_search(){
       start = (start+1)%work_queue_len;
       work_queue_size--;
       int nbr;
-      for(nbr = n-1; nbr >=1 ; nbr--){
-         if(!Visited(curr_tour,nbr)){
-            printf("%d %d\n",work_queue_len,work_queue_size);
-            assert(work_queue_size <=work_queue_len);
-            tour_t copy = Alloc_tour(obj_pool);
-            Copy_tour(curr_tour,copy);
-            Add_city(copy,nbr);
-            work_queue[end] = copy;
-            end = (end+1)%work_queue_len;
-            work_queue_size++;
+      if(City_count(curr_tour) == n){
+          Update_best_tour(curr_tour);
+      }
+      else{
+         for(nbr = n-1; nbr >=1 ; nbr--){
+            if(!Visited(curr_tour,nbr)){
+               //printf("%d %d\n",work_queue_len,work_queue_size);
+               assert(work_queue_size <=work_queue_len);
+               tour_t copy = Alloc_tour(obj_pool);
+               Copy_tour(curr_tour,copy);
+               Add_city(copy,nbr);
+               work_queue[end] = copy;
+               end = (end+1)%work_queue_len;
+               work_queue_size++;
+            }
          }
       }
       Free_tour(curr_tour,obj_pool);
    }
-   printf("%d nodes in work queue\n",work_queue_size);
+  // printf("%d nodes in work queue\n",work_queue_size);
    omp_set_num_threads(thread_count);
    int nthreads;
    #pragma omp parallel 
@@ -219,7 +224,7 @@ void Par_tree_search(){
       }
         
    }
-   printf("Done!\n");
+  // printf("Done!\n");
    free(thread_stacks);
    free(work_queue);
 }
