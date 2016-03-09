@@ -58,7 +58,7 @@ cost_t* digraph;
 city_t home_town = 0;
 tour_t best_tour;
 int init_tour_count;
-
+my_stack_t obj_pool;
 void Usage(char* prog_name);
 void Read_digraph(FILE* digraph_file);
 void Print_digraph(void);
@@ -89,7 +89,7 @@ void Push(my_stack_t stack, tour_t tour){
 }
 tour_t Pop(my_stack_t stack){
    if(stack->list_sz == 0) {
-      printf("Pop from empty stack!\n");
+      printf("Pop from empty stack! id: %d\n",stack->id);
       exit(1);
    }
    stack->list_sz--;
@@ -99,7 +99,7 @@ int Empty_stack(my_stack_t stack){
    return stack->list_sz==0;
 }
 void Push_copy(my_stack_t stack, tour_t tour){
-   tour_t copy = Alloc_tour(NULL);
+   tour_t copy = Alloc_tour(obj_pool);
    Copy_tour(tour,copy);
    Push(stack,copy);
 }
@@ -116,6 +116,7 @@ void Alloc_stack(my_stack_t stack,int id,int max_size){
    stack->list_sz = 0;
    stack->list_alloc = max_size;
 }
+
 /*------------------------------------------------------------------*/
 int main(int argc, char* argv[]) {
    FILE* digraph_file;
@@ -145,10 +146,8 @@ int main(int argc, char* argv[]) {
    printf("City count = %d\n",  City_count(best_tour));
    printf("Cost = %d\n\n", Tour_cost(best_tour));
 #  endif
-   // stack_struct global_stack;
-   // Alloc_stack(&global_stack,1,1000);
+   
    start = omp_get_wtime();
-   //Serial_tree_search(&global_stack,init_tour);
    Par_tree_search();
    finish = omp_get_wtime();
    
@@ -171,28 +170,24 @@ void Par_tree_search(){
 
    for(thread_id = 0; thread_id < thread_count; thread_id++){
       thread_stacks[thread_id] = (my_stack_t)malloc(sizeof(stack_struct));
-      Alloc_stack(thread_stacks[thread_id],thread_id,1000);
+      Alloc_stack(thread_stacks[thread_id],thread_id,STACK_SIZE);
    }
    
-   tour_t init_tour = Alloc_tour(NULL);
+   tour_t init_tour = Alloc_tour(obj_pool);
    Init_tour(init_tour,0);
     
-   //make an array of partial tours that will be solved by each threads.
-   // Anyone thread will fill the array while others will poll if they have something to do
-   // thread with id i, will check for partial tours at positions i+k*thread_count, for any k
+   
    int work_queue_len = max(n,2*thread_count);
    printf("work_queue_len : %d\n",work_queue_len);
 
    int work_queue_size = 0,start=0,end=0;  
    tour_t* work_queue = (tour_t*)malloc(work_queue_len*sizeof(tour_t));
-   memset(work_queue,0,work_queue_len);
-   // int bfs_queue_len = 2*work_queue_len;
-   // int bfs_queue_size = 0;  
-   // tour_t* bfs_queue = (tour_t*)malloc(bfs_queue_len*sizeof(tour_t));
+   memset(work_queue,0,work_queue_len*sizeof(tour_t));
    work_queue[0] = init_tour;
    work_queue_size++;end++;
    while(work_queue_size > 0 && work_queue_size < thread_count){
       tour_t curr_tour = work_queue[start];
+      work_queue[start] = 0;
       start = (start+1)%work_queue_len;
       work_queue_size--;
       int nbr;
@@ -200,7 +195,7 @@ void Par_tree_search(){
          if(!Visited(curr_tour,nbr)){
             printf("%d %d\n",work_queue_len,work_queue_size);
             assert(work_queue_size <=work_queue_len);
-            tour_t copy = Alloc_tour(NULL);
+            tour_t copy = Alloc_tour(obj_pool);
             Copy_tour(curr_tour,copy);
             Add_city(copy,nbr);
             work_queue[end] = copy;
@@ -208,24 +203,31 @@ void Par_tree_search(){
             work_queue_size++;
          }
       }
-      Free_tour(curr_tour,NULL);
+      Free_tour(curr_tour,obj_pool);
    }
    printf("%d nodes in work queue\n",work_queue_size);
-   int i;
    omp_set_num_threads(thread_count);
-   #pragma omp parallel for schedule(static) private(i)
-   
-      for(i = 0; i < work_queue_size; i++){
-         int idx = (start+i)%work_queue_len, tid = omp_get_thread_num();
-         Serial_tree_search(thread_stacks[tid],work_queue[idx]);
+   int nthreads;
+   #pragma omp parallel 
+   {
+      #pragma omp single
+      nthreads = omp_get_num_threads();
+      int tid = omp_get_thread_num();
+      int i;
+      for(i = tid;work_queue_size > 0 && i < work_queue_size; i += nthreads){
+         int wq_idx = (start+i)%work_queue_size;
+         if(work_queue[wq_idx] == 0) break;
+         Serial_tree_search(thread_stacks[tid],work_queue[wq_idx]);
       }
+        
+   }
    printf("Done!\n");
    free(thread_stacks);
-   //Free_tour(init_tour,NULL);
    free(work_queue);
 }
 void Serial_tree_search(my_stack_t stack,tour_t partial_tour){
    assert(stack);
+   assert(partial_tour);
    Push(stack,partial_tour);
    while(!Empty_stack(stack)){
       tour_t curr_tour = Pop(stack);
@@ -242,19 +244,10 @@ void Serial_tree_search(my_stack_t stack,tour_t partial_tour){
             }
          }
       }
-      Free_tour(curr_tour,NULL);
+      Free_tour(curr_tour,obj_pool);
    }
 }
-/*------------------------------------------------------------------
- * Function:  Init_tour
- * Purpose:   Initialize the data members of allocated tour
- * In args:   
- *    cost:   initial cost of tour
- * Global in:
- *    n:      number of cities in TSP
- * Out arg:   
- *    tour
- */
+
 void Init_tour(tour_t tour, cost_t cost) {
    int i;
 
@@ -267,24 +260,13 @@ void Init_tour(tour_t tour, cost_t cost) {
 }  /* Init_tour */
 
 
-/*------------------------------------------------------------------
- * Function:  Usage
- * Purpose:   Inform user how to start program and exit
- * In arg:    prog_name
- */
+
 void Usage(char* prog_name) {
    fprintf(stderr, "usage: %s <thread_count> <digraph file>\n", prog_name);
    exit(0);
 }  /* Usage */
 
-/*------------------------------------------------------------------
- * Function:  Read_digraph
- * Purpose:   Read in the number of cities and the digraph of costs
- * In arg:    digraph_file
- * Globals out:
- *    n:        the number of cities
- *    digraph:  the matrix file
- */
+
 void Read_digraph(FILE* digraph_file) {
    int i, j;
 
@@ -310,13 +292,7 @@ void Read_digraph(FILE* digraph_file) {
 }  /* Read_digraph */
 
 
-/*------------------------------------------------------------------
- * Function:  Print_digraph
- * Purpose:   Print the number of cities and the digraphrix of costs
- * Globals in:
- *    n:        number of cities
- *    digraph:  digraph of costs
- */
+
 void Print_digraph(void) {
    int i, j;
 
@@ -331,15 +307,7 @@ void Print_digraph(void) {
 }  /* Print_digraph */
 
 
-/*------------------------------------------------------------------
- * Function:    Best_tour
- * Purpose:     Determine whether addition of the hometown to the 
- *              n-city input tour will lead to a best tour.
- * In arg:
- *    tour:     tour visiting all n cities
- * Ret val:
- *    TRUE if best tour, FALSE otherwise
- */
+
 int Best_tour(tour_t tour) {
    cost_t cost_so_far = Tour_cost(tour);
    city_t last_city = Last_city(tour);
@@ -351,15 +319,6 @@ int Best_tour(tour_t tour) {
 }  /* Best_tour */
 
 
-/*------------------------------------------------------------------
- * Function:    Update_best_tour
- * Purpose:     Replace the existing best tour with the input tour +
- *              hometown
- * In arg:
- *    tour:     tour that's visited all n-cities
- * Global out:
- *    best_tour:  the current best tour
- */
 void Update_best_tour(tour_t tour) {
 
    if (Best_tour(tour)) {
@@ -371,46 +330,22 @@ void Update_best_tour(tour_t tour) {
 }  /* Update_best_tour */
 
 
-/*------------------------------------------------------------------
- * Function:   Copy_tour
- * Purpose:    Copy tour1 into tour2
- * In arg:
- *    tour1
- * Out arg:
- *    tour2
- */
 void Copy_tour(tour_t tour1, tour_t tour2) {
 
    memcpy(tour2->cities, tour1->cities, (n+1)*sizeof(city_t));
    tour2->count = tour1->count;
-   tour2->cost = tour1->cost;
+      tour2->cost = tour1->cost;
 }  /* Copy_tour */
 
-/*------------------------------------------------------------------
- * Function:  Add_city
- * Purpose:   Add city to the end of tour
- * In arg:
- *    city
- * In/out arg:
- *    tour
- * Note: This should only be called if tour->count >= 1.
- */
+
 void Add_city(tour_t tour, city_t new_city) {
    city_t old_last_city = Last_city(tour);
    tour->cities[tour->count] = new_city;
    (tour->count)++;
    tour->cost += Cost(old_last_city,new_city);
-}  /* Add_city */
+}  /* Add_city */ 
 
-/*------------------------------------------------------------------
- * Function:  Remove_last_city
- * Purpose:   Remove last city from end of tour
- * In/out arg:
- *    tour
- * Note:
- *    Function assumes there are at least two cities on the tour --
- *    i.e., the hometown in tour->cities[0] won't be removed.
- */
+
 void Remove_last_city(tour_t tour) {
    city_t old_last_city = Last_city(tour);
    city_t new_last_city;
@@ -421,39 +356,19 @@ void Remove_last_city(tour_t tour) {
    tour->cost -= Cost(new_last_city,old_last_city);
 }  /* Remove_last_city */
 
-/*------------------------------------------------------------------
- * Function:  Feasible
- * Purpose:   Check whether nbr could possibly lead to a better
- *            solution if it is added to the current tour.  The
- *            function checks whether nbr has already been visited
- *            in the current tour, and, if not, whether adding the
- *            edge from the current city to nbr will result in
- *            a cost less than the current best cost.
- * In args:   All
- * Global in:
- *    best_tour
- * Return:    TRUE if the nbr can be added to the current tour.
- *            FALSE otherwise
- */
+
 int Feasible(tour_t tour, city_t city) {
    city_t last_city = Last_city(tour);
 
+   int best_cost;
+   best_cost = Tour_cost(best_tour);
    if (!Visited(tour, city) && 
-        Tour_cost(tour) + Cost(last_city,city) < Tour_cost(best_tour))
+        Tour_cost(tour) + Cost(last_city,city) < best_cost)
       return TRUE;
    else
       return FALSE;
 }  /* Feasible */
 
-
-/*------------------------------------------------------------------
- * Function:   Visited
- * Purpose:    Use linear search to determine whether city has already
- *             been visited on the current tour.
- * In args:    All
- * Return val: TRUE if city has already been visited.
- *             FALSE otherwise
- */
 int Visited(tour_t tour, city_t city) {
    int i;
 
@@ -463,16 +378,6 @@ int Visited(tour_t tour, city_t city) {
 }  /* Visited */
 
 
-/*------------------------------------------------------------------
- * Function:  Print_tour
- * Purpose:   Print a tour
- * In args:   All
- * Notes:      
- * 1.  Copying the tour to a string makes it less likely that the 
- *     output will be broken up by another process/thread
- * 2.  Passing a negative value for my_rank will cause the rank
- *     to be omitted from the output
- */
 void Print_tour(int my_rank, tour_t tour, char* title) {
    int i;
    char string[MAX_STRING];
@@ -486,16 +391,6 @@ void Print_tour(int my_rank, tour_t tour, char* title) {
    printf("%s\n", string);
 }  /* Print_tour */
 
-
-/*------------------------------------------------------------------
- * Function:  Alloc_tour
- * Purpose:   Allocate memory for a tour and its members
- * In/out arg:
- *    avail:  stack storing unused tours
- * Global in: n, number of cities
- * Ret val:   Pointer to a tour_struct with storage allocated for its
- *            members
- */
 tour_t Alloc_tour(my_stack_t avail) {
    tour_t tmp;
 
@@ -508,14 +403,7 @@ tour_t Alloc_tour(my_stack_t avail) {
    }
 }  /* Alloc_tour */
 
-/*------------------------------------------------------------------
- * Function:  Free_tour
- * Purpose:   Free a tour
- * In/out arg:
- *    avail
- * Out arg:   
- *    tour
- */
+
 void Free_tour(tour_t tour, my_stack_t avail) {
    if (avail == NULL) {
       free(tour->cities);
