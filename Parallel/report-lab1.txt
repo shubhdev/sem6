@@ -1,0 +1,32 @@
+												COL380 LAB1 REPORT
+
+												   SHUBHAM RAWAT
+
+DESIGN DECISIONS (Search Algorithm):
+
+- Each node in the tour tree, represents a sub problem, the sub-problem being to find the best way to travel through the remaining cities not covered yet in the partial tour.
+- Each thread will be assigned some nodes, and that thread will solve the partial problems represented by those nodes, serially , one subproblem at a time.
+- Each partial problem is solved using the branch & bound algorithm. It consists of running a dfs, with the node corresponding to the subproblem as the root.
+- We maintain a global best tour, which is updated whenever a new tour is found. During the dfs, as soon as the cost of a partial tour exceeds that of the current best tour, it is clear that final cost of any tour containing this partial tour( i.e any leaf node in the subtree of the corresponding node) can't improve the current best.
+Hence this node is pruned, and its subtree is not explored further.
+
+The final value of the best tour is the optimal value.
+
+NOTE:
+We keep a global variable common to all the threads instead of maintaining thread local optimas and combining them to get the final optimal value at the end. 
+There is a tradeoff to consider here. Keeping a global best, makes the code section that updates the best tour, a critical section. This will affect the speedup.
+However, if we keep thread local optimas, the pruning in each thread will be done after comparing to the local best only, which might be worse than when the pruning happens after comparision with the global best (simply because the global best will be better/same as the local best of each thread).
+
+In the given problem, it was observed the very few paths were explored till the end (most were pruned before that). Hence the code to update the best is invoked a few times only. Thus, it was better to favor more pruning than the delay caused at the update function.  
+
+PARALLELIZATION STRATEGY:
+
+- Since the lab description asks for a static load assignment, we decide the subproblem assigned to each thread before the actual parallel execution begins.
+
+- To get an initial set of subproblems, the program runs a BFS on the tour tree with the initial tour (consisting of only the home town) as the root. As soon as the no. of nodes in the bfs frontier exceed the no. of threads, we stop the bfs.
+
+So now we have a set of subproblems (represented by nodes in the bfs queue) that we can assign to the threads.
+
+LOAD DISTRIBUTION:
+
+The subproblems are assigned to the threads in a round robin manner. This ensures that the no. of nodes assigned to any 2 threads, differ by atmost 1. Hence the load distribution is even. 
