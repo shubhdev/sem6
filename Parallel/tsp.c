@@ -84,16 +84,14 @@ void Push(my_stack_t stack, tour_t tour){
       fprintf(stderr,"Stack overflow for stack %d\n",stack->id);
       exit(1);
    }
-   stack->list[stack->list_sz] = tour;
-   stack->list_sz++;
+   stack->list[stack->list_sz++] = tour;
 }
 tour_t Pop(my_stack_t stack){
    if(stack->list_sz == 0) {
       printf("Pop from empty stack! id: %d\n",stack->id);
       exit(1);
    }
-   stack->list_sz--;
-   return stack->list[stack->list_sz];
+   return stack->list[--stack->list_sz];
 }
 int Empty_stack(my_stack_t stack){
    return stack->list_sz==0;
