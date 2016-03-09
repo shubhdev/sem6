@@ -168,7 +168,7 @@ void Par_tree_search(){
 
    for(thread_id = 0; thread_id < thread_count; thread_id++){
       thread_stacks[thread_id] = (my_stack_t)malloc(sizeof(stack_struct));
-      Alloc_stack(thread_stacks[thread_id],thread_id,STACK_SIZE);
+      Alloc_stack(thread_stacks[thread_id],thread_id,n*n);
    }
    
    tour_t init_tour = Alloc_tour(obj_pool);
