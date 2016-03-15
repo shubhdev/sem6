@@ -1,7 +1,7 @@
 dat_x = 'data/q1x.dat';
 dat_y = 'data/q1y.dat';
-alpha = 0.9;
-eps = 1e-6;
+alpha = 2.1;
+eps = 1;
 normalize = true;
 if isempty(normalize)
     normalize = false;

@@ -29,4 +29,4 @@ So now we have a set of subproblems (represented by nodes in the bfs queue) that
 
 LOAD DISTRIBUTION:
 
-The subproblems are assigned to the threads in a round robin manner. This ensures that the no. of nodes assigned to any 2 threads, differ by atmost 1. Hence the load distribution is even. 
+The subproblems are assigned to the threads in a round robin manner. This ensures that the no. of nodes assigned to any 2 threads, differ by atmost 1. This ensures the load distribution is even. 
