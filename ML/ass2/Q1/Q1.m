@@ -38,3 +38,7 @@ end
     b = b + b_i;
   end
   b = b/length(SV);
+  testdata = importdata('testdata',',');
+  testclass = testdata(:,end);
+  testdata = testdata(:,1:end-1);
+  acc_lin = SVM_predict(alpha,b,X,@(x1,x2)dot(x1,x2),testdata,testclass);
